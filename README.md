@@ -9,10 +9,10 @@ Configuration is done with Lambda environment variables; the same function can b
 ## 1. Build
 ```bash
 git clone <repo>
-cd send-email-lambda
+cd java-ses
 mvn clean package
 ```
-Artifact: `target/send-email-lambda-1.0.0-all.jar`
+Artifact: `target/java-ses-1.0.0-all.jar`
 
 ---
 
@@ -30,12 +30,12 @@ cat > trust.json <<EOF
 }
 EOF
 aws iam create-role \
-  --role-name lambda-ses-send-email \
+  --role-name lambda-ses-email \
   --assume-role-policy-document file://trust.json
 
 # give Lambda basic logging rights
 aws iam attach-role-policy \
-  --role-name lambda-ses-send-email \
+  --role-name lambda-ses-email \
   --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
 # allow SES (least privilege – change to your verified address)
@@ -53,7 +53,7 @@ cat > ses-policy.json <<EOF
 }
 EOF
 aws iam put-role-policy \
-  --role-name lambda-ses-send-email \
+  --role-name lambda-ses-email \
   --policy-name SES-Send-Policy \
   --policy-document file://ses-policy.json
 ```
@@ -65,9 +65,9 @@ aws iam put-role-policy \
 aws lambda create-function \
   --function-name send-email-java \
   --runtime java17 \
-  --role arn:aws:iam::<ACCOUNT_ID>:role/lambda-ses-send-email \
+  --role arn:aws:iam::<ACCOUNT_ID>:role/lambda-ses-email \
   --handler example.SendEmailHandler::handleRequest \
-  --zip-file fileb://target/send-email-lambda-1.0.0-all.jar \
+  --zip-file fileb://target/java-ses-1.0.0-all.jar \
   --timeout 30 \
   --memory-size 512 \
   --environment "Variables={\
@@ -160,13 +160,13 @@ sam local invoke -e event.json
 aws lambda delete-function --function-name send-email-java
 
 # 2. Delete the inline policy
-aws iam delete-role-policy --role-name lambda-ses-send-email --policy-name SES-Send-Policy
+aws iam delete-role-policy --role-name lambda-ses-email --policy-name SES-Send-Policy
 
 # 3. Detach the managed execution policy
-aws iam detach-role-policy --role-name lambda-ses-send-email --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+aws iam detach-role-policy --role-name lambda-ses-email --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
 # 4. Finally, delete the role
-aws iam delete-role --role-name lambda-ses-send-email
+aws iam delete-role --role-name lambda-ses-email
 ```
 
 ---
